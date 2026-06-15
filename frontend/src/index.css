@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { font-family: 'Segoe UI', system-ui, sans-serif; background:#f5f7f5; }
+
+/* Reusable component classes */
+.card { @apply bg-white rounded-xl shadow-sm p-5 border border-gray-100; }
+.btn { @apply bg-agro hover:bg-agro-dark text-white px-4 py-2 rounded-lg transition; }
+.btn-outline { @apply border border-agro text-agro px-4 py-2 rounded-lg hover:bg-agro-light transition; }
+.input { @apply w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-agro-accent; }
+.table-th { @apply text-left px-4 py-2 bg-agro-light text-agro-dark font-semibold; }
+.table-td { @apply px-4 py-2 border-t border-gray-100; }
