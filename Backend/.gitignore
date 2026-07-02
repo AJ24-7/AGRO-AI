@@ -1,1 +1,24 @@
 .env
+.env.local
+.env.*
+!.env.example
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local database and logs
+*.sqlite3
+*.db
+*.log
+
+# ML training/model artifacts
+*.h5
+*.keras
+*.ckpt
+*.pt
+*.pth

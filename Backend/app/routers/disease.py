@@ -1,10 +1,10 @@
 """Leaf disease detection + history + notification."""
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from .. import models
 from ..database import get_db
 from ..deps import get_current_user
-from ..ml.disease_model import detect_disease
+from ..ml.disease_detector import detect_disease
 
 router = APIRouter(prefix="/api/disease", tags=["Disease Detection"])
 
@@ -14,6 +14,9 @@ async def detect(file: UploadFile = File(...),
                  db: Session = Depends(get_db), user=Depends(get_current_user)):
     image_bytes = await file.read()
     result = detect_disease(image_bytes)
+
+    if result.get("disease") == "Error":
+        raise HTTPException(status_code=500, detail=result.get("treatment", "Disease detection failed."))
 
     rec = models.DiseaseDetection(
         user_id=user.id,

@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models mirroring the SQL schema."""
 from sqlalchemy import (Column, Integer, String, Float, Text,
-                        Boolean, DateTime, ForeignKey)
+                        Boolean, DateTime, ForeignKey, JSON)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -34,6 +34,19 @@ class Farm(Base):
     farm_name = Column(String(150), nullable=False)
     farm_area = Column(Float)
     location = Column(String(200))
+    latitude = Column(Float)
+    longitude = Column(Float)
+    boundary_points = Column(JSON)
+    calculated_area = Column(Float)
+    country = Column(String(120))
+    state = Column(String(120))
+    location_label = Column(String(255))
+    weather_summary = Column(String(255))
+    weather_code = Column(Integer)
+    temperature_c = Column(Float)
+    precipitation_mm = Column(Float)
+    wind_speed_kph = Column(Float)
+    recommended_crops = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     plots = relationship("Plot", backref="farm", cascade="all, delete")
 
@@ -98,4 +111,16 @@ class Notification(Base):
     message = Column(Text)
     type = Column(String(50))
     is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    session_id = Column(String(120), index=True, default="default")
+    role = Column(String(20), nullable=False)
+    content = Column(Text, nullable=False)
+    intent = Column(String(50))
+    meta_json = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

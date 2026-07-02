@@ -33,6 +33,19 @@ CREATE TABLE farms (
     farm_name VARCHAR(150) NOT NULL,
     farm_area FLOAT,
     location VARCHAR(200),
+    latitude FLOAT,
+    longitude FLOAT,
+    boundary_points JSONB,
+    calculated_area FLOAT,
+    country VARCHAR(120),
+    state VARCHAR(120),
+    location_label VARCHAR(255),
+    weather_summary VARCHAR(255),
+    weather_code INT,
+    temperature_c FLOAT,
+    precipitation_mm FLOAT,
+    wind_speed_kph FLOAT,
+    recommended_crops JSONB,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -98,7 +111,21 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Chat Messages (assistant history)
+CREATE TABLE chat_messages (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    session_id VARCHAR(120) DEFAULT 'default',
+    role VARCHAR(20) NOT NULL,
+    content TEXT NOT NULL,
+    intent VARCHAR(50),
+    meta_json JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Helpful indexes
 CREATE INDEX idx_farms_user ON farms(user_id);
 CREATE INDEX idx_plots_farm ON plots(farm_id);
 CREATE INDEX idx_notif_user ON notifications(user_id);
+CREATE INDEX idx_chat_user ON chat_messages(user_id);
+CREATE INDEX idx_chat_session ON chat_messages(session_id);

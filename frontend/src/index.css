@@ -2,12 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-body { font-family: 'Segoe UI', system-ui, sans-serif; background:#f5f7f5; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f0; }
 
-/* Reusable component classes */
-.card { @apply bg-white rounded-xl shadow-sm p-5 border border-gray-100; }
-.btn { @apply bg-agro hover:bg-agro-dark text-white px-4 py-2 rounded-lg transition; }
-.btn-outline { @apply border border-agro text-agro px-4 py-2 rounded-lg hover:bg-agro-light transition; }
-.input { @apply w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-agro-accent; }
-.table-th { @apply text-left px-4 py-2 bg-agro-light text-agro-dark font-semibold; }
-.table-td { @apply px-4 py-2 border-t border-gray-100; }
+/* ── Core cards & layout ── */
+.card { @apply bg-white rounded-3xl shadow-sm p-5 border border-gray-100; }
+.card-hover { @apply bg-white rounded-3xl shadow-sm p-5 border border-gray-100 hover:shadow-md hover:border-agro-accent/30 transition-all duration-200; }
+
+/* ── Buttons ── */
+.btn { @apply inline-flex items-center justify-center gap-2 bg-agro hover:bg-agro-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm; }
+.btn-outline { @apply inline-flex items-center justify-center gap-2 border border-agro text-agro px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-agro-light transition-all duration-200; }
+.btn-danger { @apply inline-flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200; }
+.btn-ghost { @apply inline-flex items-center justify-center gap-1.5 text-slate-600 hover:text-agro hover:bg-agro-light px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200; }
+.btn-sm { @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200; }
+
+/* ── Inputs ── */
+.input { @apply w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-agro-accent/40 focus:border-agro-accent transition-all duration-200 placeholder:text-gray-400; }
+.input-group { @apply relative; }
+.input-icon { @apply absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400; }
+.input-with-icon { @apply w-full border border-gray-200 rounded-2xl pl-10 pr-4 py-3 text-sm text-gray-700 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-agro-accent/40 focus:border-agro-accent transition-all duration-200 placeholder:text-gray-400; }
+.label { @apply block text-sm font-medium text-slate-700 mb-1.5; }
+
+/* ── Tables ── */
+.table-th { @apply text-left px-4 py-3 bg-slate-50 text-slate-600 font-semibold text-xs uppercase tracking-wide border-b border-slate-100; }
+.table-td { @apply px-4 py-3 border-t border-gray-50 text-sm text-slate-700; }
+.table-row-hover { @apply hover:bg-slate-50/80 transition-colors duration-100; }
+
+/* ── Auth ── */
+.auth-card { @apply bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden flex flex-col lg:flex-row; }
+.auth-panel { @apply hidden lg:flex lg:w-[45%] flex-col justify-between bg-gradient-to-br from-agro to-agro-dark text-white p-10; }
+.auth-form { @apply w-full lg:w-[55%] p-8 sm:p-10; }
+.auth-feature { @apply flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-white/90; }
+.link-accent { @apply text-agro hover:text-agro-dark font-semibold underline-offset-2 hover:underline; }
+.error-box { @apply flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm; }
+.success-box { @apply flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm; }
+.checkbox-label { @apply inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer; }
+
+/* ── Dashboard ── */
+.dashboard-hero { @apply rounded-[1.75rem] border border-gray-200 bg-gradient-to-r from-white to-agro-light p-6 shadow-sm; }
+.dashboard-summary { @apply grid gap-3 sm:grid-cols-3; }
+.dashboard-summary-card { @apply rounded-2xl bg-white px-4 py-4 shadow-sm border border-gray-100; }
+
+/* ── Page structure ── */
+.page-header { @apply flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between; }
+.page-title { @apply text-2xl font-bold text-slate-900; }
+.page-subtitle { @apply text-sm text-slate-500; }
+.section-title { @apply text-base font-semibold text-slate-900; }
+.section-subtitle { @apply text-xs text-slate-500; }
+.card-header { @apply flex flex-col gap-0.5 mb-4; }
+
+/* ── Badges ── */
+.badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium; }
+.badge-info { @apply bg-emerald-50 text-emerald-700 border border-emerald-100; }
+.badge-warning { @apply bg-amber-50 text-amber-700 border border-amber-100; }
+.badge-danger { @apply bg-rose-50 text-rose-700 border border-rose-100; }
+.badge-neutral { @apply bg-slate-100 text-slate-600 border border-slate-200; }
+.badge-success { @apply bg-green-50 text-green-700 border border-green-100; }
+
+/* ── Stat cards ── */
+.stat-card { @apply bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-start gap-4; }
+.stat-icon { @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl; }
+.stat-value { @apply text-2xl font-bold text-slate-900 leading-tight; }
+.stat-label { @apply text-xs text-slate-500 uppercase tracking-wide font-medium; }
+.stat-trend { @apply text-xs font-medium mt-1; }
+
+/* ── Notification item ── */
+.notif-item { @apply flex gap-3 rounded-2xl border p-4 transition-all duration-150; }
+.notif-unread { @apply bg-agro-light/40 border-agro-accent/30; }
+.notif-read { @apply bg-white border-gray-100 opacity-75; }
+
+/* ── Sidebar ── */
+.sidebar-overlay { @apply fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40; }
+.sidebar-drawer { @apply flex flex-col h-full shadow-2xl; }
+
+/* ── Confidence bar ── */
+.confidence-bar { @apply h-2.5 rounded-full bg-slate-100 overflow-hidden; }
+.confidence-fill { @apply h-full rounded-full bg-gradient-to-r from-agro to-agro-accent transition-all duration-700 ease-out; }
+
+/* ── Upload zone ── */
+.drop-zone { @apply w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-agro-accent hover:bg-agro-light/30 transition-all duration-200 cursor-pointer; }
+.drop-zone-active { @apply border-agro-accent bg-agro-light/30; }
+
+/* ── Form field ── */
+.form-field { @apply flex flex-col gap-1.5; }
+
+/* ── Empty state ── */
+.empty-state { @apply flex flex-col items-center justify-center py-12 text-center text-slate-400; }
+
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 0.8s linear infinite; }
+
+/* ── Nutrient meter ── */
+.nutrient-bar { @apply h-2 rounded-full overflow-hidden bg-slate-100; }
+.nutrient-n { @apply h-full rounded-full bg-blue-400; }
+.nutrient-p { @apply h-full rounded-full bg-orange-400; }
+.nutrient-k { @apply h-full rounded-full bg-purple-400; }
+.nutrient-ph { @apply h-full rounded-full bg-teal-400; }
