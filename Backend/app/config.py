@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     CHATBOT_LLM_PROVIDER: str = "ollama"  # none | ollama
     CHATBOT_OLLAMA_BASE_URL: str = "http://localhost:11434"
     CHATBOT_OLLAMA_MODEL: str = "llama3.1:8b"
-    CHATBOT_LLM_TIMEOUT_SECONDS: int = 20
+    CHATBOT_LLM_TIMEOUT_SECONDS: int = 60
 
     class Config:
         # envs are already loaded into the environment above
