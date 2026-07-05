@@ -251,6 +251,7 @@ class ChatReply(BaseModel):
     reply: str
     intent: str
     analysis: str
+    provider: str = "ollama"
     action_items: List[str] = Field(default_factory=list)
     farm_context: ChatFarmContext
     crop_context: ChatCropContext

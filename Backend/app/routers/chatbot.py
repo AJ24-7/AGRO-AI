@@ -499,11 +499,20 @@ def _compose_reply(
     crop_ctx: schemas.ChatCropContext,
     actions: List[str],
     web_results: List[schemas.ChatWebResult],
+    history_messages: List[dict[str, Any]] | None = None,
 ) -> str:
     """Build a concise, grounded answer with optional OSS-LLM synthesis."""
     provider = (settings.CHATBOT_LLM_PROVIDER or "none").strip().lower()
     if provider == "ollama":
-        llm_reply = _compose_with_ollama(intent, message, farm_ctx, crop_ctx, actions, web_results)
+        llm_reply = _compose_with_ollama(
+            intent,
+            message,
+            farm_ctx,
+            crop_ctx,
+            actions,
+            web_results,
+            history_messages=history_messages,
+        )
         if llm_reply:
             return llm_reply
 
@@ -548,14 +557,15 @@ def _compose_prompt(
     action_hint = actions[0] if actions else "Use the recommendation and monitor weather weekly."
 
     return (
-        "You are an agriculture copilot. Generate a concise actionable answer from provided evidence only.\n"
-        "Do not dump full text. No long paragraphs. No markdown tables.\n"
+        "You are an agriculture copilot for smallholder and commercial farms. Answer only with practical, crop- and farm-specific advice based on the provided context.\n"
+        "Do not include generic AI disclaimers, model names, or unverifiable claims. Keep the response short, actionable, and directly relevant to the user's crop, soil, disease, weather, market, or farm question.\n"
+        "Do not use markdown tables. Use very short bullet points only when evidence is available.\n"
         "\n"
         "Required response style:\n"
-        "1) Start with: 'Based on your location ...'\n"
-        "2) Give the best direct recommendation first (for crop intent, exactly one primary crop to plant now).\n"
-        "3) Add 2-3 short bullet points of supporting web evidence.\n"
-        "4) End with a follow-up question like: 'Would you like the step-by-step growing method?'.\n"
+        "1) Start with: 'Based on your location ...' or equivalent local reference.\n"
+        "2) Give the best direct recommendation first. For crop intent, recommend exactly one primary crop to plant now.\n"
+        "3) Add 1-3 concise supporting bullet points from the evidence.\n"
+        "4) End with a practical follow-up question such as: 'Would you like the step-by-step growing method?'.\n"
         "\n"
         f"Intent: {intent}\n"
         f"User question: {message}\n"
@@ -569,6 +579,35 @@ def _compose_prompt(
     )
 
 
+def _build_ollama_messages(
+    intent: str,
+    message: str,
+    history_messages: List[dict[str, Any]] | None,
+    prompt: str,
+) -> list[dict[str, str]]:
+    messages: list[dict[str, str]] = [
+        {
+            "role": "system",
+            "content": (
+                "You are AgroPilot, a practical and friendly farm assistant. "
+                "Answer using the provided farm context and recent conversation history. "
+                "Be concise, specific, and useful, and avoid making unsupported claims."
+            ),
+        }
+    ]
+
+    recent_history = []
+    for item in history_messages or []:
+        role = (item.get("role") or "").strip().lower()
+        content = (item.get("content") or "").strip()
+        if role in {"user", "assistant"} and content:
+            recent_history.append({"role": role, "content": content})
+
+    messages.extend(recent_history[-8:])
+    messages.append({"role": "user", "content": f"Intent: {intent}\nUser question: {message}\n{prompt}"})
+    return messages
+
+
 def _compose_with_ollama(
     intent: str,
     message: str,
@@ -576,12 +615,13 @@ def _compose_with_ollama(
     crop_ctx: schemas.ChatCropContext,
     actions: List[str],
     web_results: List[schemas.ChatWebResult],
+    history_messages: List[dict[str, Any]] | None = None,
 ) -> str:
     prompt = _compose_prompt(intent, message, farm_ctx, crop_ctx, actions, web_results)
     payload = json.dumps(
         {
             "model": settings.CHATBOT_OLLAMA_MODEL,
-            "prompt": prompt,
+            "messages": _build_ollama_messages(intent, message, history_messages, prompt),
             "stream": False,
             "options": {
                 "temperature": 0.2,
@@ -589,7 +629,7 @@ def _compose_with_ollama(
         }
     ).encode("utf-8")
 
-    endpoint = f"{settings.CHATBOT_OLLAMA_BASE_URL.rstrip('/')}/api/generate"
+    endpoint = f"{settings.CHATBOT_OLLAMA_BASE_URL.rstrip('/')}/api/chat"
     req = request.Request(
         endpoint,
         data=payload,
@@ -599,8 +639,8 @@ def _compose_with_ollama(
     try:
         with request.urlopen(req, timeout=settings.CHATBOT_LLM_TIMEOUT_SECONDS) as response:
             data = json.loads(response.read().decode("utf-8"))
-        text = (data.get("response") or "").strip()
-        return text
+        text = (data.get("message") or {}).get("content") or (data.get("response") or "")
+        return str(text).strip()
     except Exception:
         return ""
 
@@ -645,6 +685,18 @@ def _compose_fallback(
     )
 
 
+def _recent_history(db: Session, user_id: int, session_id: str, limit: int = 8) -> List[dict[str, Any]]:
+    rows = (
+        db.query(models.ChatMessage)
+        .filter(models.ChatMessage.user_id == user_id, models.ChatMessage.session_id == session_id)
+        .order_by(models.ChatMessage.created_at.desc(), models.ChatMessage.id.desc())
+        .limit(limit)
+        .all()
+    )
+    rows.reverse()
+    return [{"role": row.role, "content": row.content or ""} for row in rows if row.content]
+
+
 def _save_message(db: Session, user_id: int, session_id: str, role: str, content: str,
                   intent: str = None, meta_json=None):
     record = models.ChatMessage(
@@ -682,7 +734,19 @@ def ask(payload: schemas.ChatInput,
         knowledge_links = knowledge_links + [
             schemas.ChatKnowledgeLink(title=item.title, url=item.url) for item in web_results
         ]
-    reply = _compose_reply(intent, message, farm_ctx, crop_ctx, actions, web_results)
+
+    history_messages = _recent_history(db, user.id, payload.session_id or "default")
+    reply = _compose_reply(
+        intent,
+        message,
+        farm_ctx,
+        crop_ctx,
+        actions,
+        web_results,
+        history_messages=history_messages,
+    )
+
+    provider = (settings.CHATBOT_LLM_PROVIDER or "ollama").strip().lower()
 
     _save_message(db, user.id, payload.session_id or "default", "user", message, intent=intent)
     _save_message(
@@ -706,6 +770,7 @@ def ask(payload: schemas.ChatInput,
         "reply": reply,
         "intent": intent,
         "analysis": analysis,
+        "provider": provider,
         "action_items": actions,
         "farm_context": farm_ctx,
         "crop_context": crop_ctx,

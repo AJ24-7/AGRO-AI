@@ -496,7 +496,7 @@ export default function Assistant() {
           </div>
           <div>
             <h2 className="page-title">{t("chatbot.screenTitle")}</h2>
-            <p className="page-subtitle">Smart farm assistant with voice and contextual recommendations.</p>
+            <p className="page-subtitle">Smart farm assistant powered by Ollama with crop- and agriculture-specific guidance.</p>
           </div>
         </div>
 
