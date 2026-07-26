@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError
+from .config import settings
 from .database import Base, engine
 from .routers import (auth, farmer, farm, plot, soil, crop,
                       disease, fertilizer, tractor, notification,
