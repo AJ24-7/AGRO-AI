@@ -12,24 +12,32 @@ router = APIRouter(prefix="/api/disease", tags=["Disease Detection"])
 @router.post("/detect")
 async def detect(file: UploadFile = File(...),
                  db: Session = Depends(get_db), user=Depends(get_current_user)):
-    image_bytes = await file.read()
-    result = detect_disease(image_bytes)
+    try:
+        image_bytes = await file.read()
+        result = detect_disease(image_bytes)
 
-    if result.get("disease") == "Error":
-        raise HTTPException(status_code=500, detail=result.get("treatment", "Disease detection failed."))
+        if result.get("disease") == "Error":
+            raise HTTPException(status_code=500, detail=result.get("treatment", "Disease detection failed."))
 
-    rec = models.DiseaseDetection(
-        user_id=user.id,
-        disease_name=result["disease"],
-        confidence=result["confidence"],
-        treatment=result["treatment"])
-    db.add(rec)
-    db.add(models.Notification(
-        user_id=user.id, type="disease",
-        title="Disease Detection Result",
-        message=f"Detected: {result['disease']} ({result['confidence']}%)"))
-    db.commit()
-    return result
+        rec = models.DiseaseDetection(
+            user_id=user.id,
+            disease_name=result["disease"],
+            confidence=result["confidence"],
+            treatment=result["treatment"])
+        db.add(rec)
+        db.add(models.Notification(
+            user_id=user.id, type="disease",
+            title="Disease Detection Result",
+            message=f"Detected: {result['disease']} ({result['confidence']}%)"))
+        db.commit()
+        return result
+    except RuntimeError as e:
+        # Model not trained yet — return friendly message
+        raise HTTPException(
+            status_code=503,
+            detail="Disease detection model not yet trained. Please upload training data and rebuild. "
+                   "For now, other features (crop recommendation, soil analysis, etc.) are available."
+        )
 
 
 @router.get("/history")
