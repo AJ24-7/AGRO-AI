@@ -88,10 +88,12 @@ _initialize_database()
 
 app = FastAPI(title="AgroPilot AI API", version="1.0.0")
 
-# CORS – allow React dev server
+# CORS – read from env so Render / other hosts can be added without code changes
+_allowed_origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

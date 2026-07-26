@@ -32,10 +32,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     TESSERACT_CMD: str = "/usr/bin/tesseract" if os.name != "nt" else r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
-    CHATBOT_LLM_PROVIDER: str = "ollama"  # none | ollama
+    CHATBOT_LLM_PROVIDER: str = "none"  # none | ollama
     CHATBOT_OLLAMA_BASE_URL: str = "http://localhost:11434"
     CHATBOT_OLLAMA_MODEL: str = "llama3.1:8b"
     CHATBOT_LLM_TIMEOUT_SECONDS: int = 60
+    # Comma-separated list of allowed CORS origins.
+    # Example: https://agropilot.onrender.com,https://www.agropilot.com
+    ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://localhost:3000"
 
     class Config:
         # envs are already loaded into the environment above

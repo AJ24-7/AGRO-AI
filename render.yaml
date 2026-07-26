@@ -1,0 +1,56 @@
+# Render Blueprint — AgroPilot AI
+# Docs: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: agropilot-db
+    databaseName: agropilot
+    user: agropilot
+    plan: free           # upgrade to "starter" if you need more than 90-day retention
+
+services:
+  # ── Backend (FastAPI + ML) ──────────────────────────────────────────────────
+  - type: web
+    name: agropilot-backend
+    runtime: docker
+    dockerfilePath: ./Backend/Dockerfile
+    dockerContext: ./Backend
+    plan: starter        # TensorFlow needs >512 MB RAM — free tier is not enough
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agropilot-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true         # Render auto-generates a secure random value
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
+      - key: TESSERACT_CMD
+        value: /usr/bin/tesseract
+      # Ollama cannot run on Render — set to "none" to disable LLM chatbot.
+      # To enable AI chat, set to "openai" or "groq" and add the API key below.
+      - key: CHATBOT_LLM_PROVIDER
+        value: none
+      # ALLOWED_ORIGINS is updated automatically in Step 7 after you know the
+      # frontend URL. Set it here once the frontend service is deployed.
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:5173   # REPLACE with your actual frontend URL
+
+  # ── Frontend (React / Vite SPA) ────────────────────────────────────────────
+  - type: web
+    name: agropilot-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    rootDir: ./frontend
+    envVars:
+      # REPLACE the value below with your actual backend service URL after
+      # the backend is deployed. Format: https://agropilot-backend.onrender.com
+      - key: VITE_API_URL
+        value: https://agropilot-backend.onrender.com   # REPLACE after deploy
+    routes:
+      # SPA fallback — all paths served by index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
