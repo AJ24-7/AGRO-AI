@@ -26,8 +26,9 @@ export function AuthProvider({ children }) {
 
   // Login uses OAuth2 form encoding (username = email)
   const login = async (email, password) => {
+    const normalizedEmail = email.trim().toLowerCase();
     const form = new URLSearchParams();
-    form.append("username", email);
+    form.append("username", normalizedEmail);
     form.append("password", password);
     const { data } = await api.post("/api/auth/login", form);
     localStorage.setItem("token", data.access_token);
@@ -36,7 +37,13 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (payload) => {
-    await api.post("/api/auth/register", payload);
+    const normalizedPayload = {
+      ...payload,
+      email: payload.email.trim().toLowerCase(),
+      password: payload.password,
+      phone: payload.phone?.trim() || "",
+    };
+    await api.post("/api/auth/register", normalizedPayload);
   };
 
   const logout = () => {

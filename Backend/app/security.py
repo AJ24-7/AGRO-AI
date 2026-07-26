@@ -2,9 +2,13 @@
 from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
+from passlib.exc import UnknownHashError
 from .config import settings
 
-pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["pbkdf2_sha256", "bcrypt"],
+    deprecated="auto",
+)
 
 
 def hash_password(password: str) -> str:
@@ -12,7 +16,18 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return pwd_context.verify(plain, hashed)
+    except (UnknownHashError, ValueError, TypeError):
+        return False
+
+
+def verify_and_update_password(plain: str, hashed: str) -> tuple[bool, str | None]:
+    """Verify a password and return a migrated hash when passlib recommends it."""
+    try:
+        return pwd_context.verify_and_update(plain, hashed)
+    except (UnknownHashError, ValueError, TypeError):
+        return False, None
 
 
 def create_access_token(data: dict) -> str:

@@ -1,11 +1,17 @@
 """FastAPI application entry point - registers all routers."""
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import OperationalError
 from .database import Base, engine
 from .routers import (auth, farmer, farm, plot, soil, crop,
                       disease, fertilizer, tractor, notification,
                       analytics, chatbot, equipment)
+
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_farm_schema():
@@ -64,10 +70,21 @@ def _ensure_chat_schema():
         connection.execute(text("CREATE INDEX idx_chat_session ON chat_messages(session_id)"))
 
 
-# Auto-create tables (for dev; use Alembic in production)
-Base.metadata.create_all(bind=engine)
-_ensure_farm_schema()
-_ensure_chat_schema()
+def _initialize_database():
+    """Initialize schema at startup, but don't crash API if DB is unavailable."""
+    try:
+        # Auto-create tables (for dev; use Alembic in production)
+        Base.metadata.create_all(bind=engine)
+        _ensure_farm_schema()
+        _ensure_chat_schema()
+    except OperationalError:
+        logger.exception(
+            "Database initialization failed. API started without DB schema init. "
+            "Check DATABASE_URL and database network reachability."
+        )
+
+
+_initialize_database()
 
 app = FastAPI(title="AgroPilot AI API", version="1.0.0")
 
