@@ -17,7 +17,7 @@ async def detect(file: UploadFile = File(...),
         result = detect_disease(image_bytes)
 
         if result.get("disease") == "Error":
-            raise HTTPException(status_code=500, detail=result.get("treatment", "Disease detection failed."))
+            raise HTTPException(status_code=503, detail=result.get("treatment", "Disease detection unavailable."))
 
         rec = models.DiseaseDetection(
             user_id=user.id,
