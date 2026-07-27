@@ -746,7 +746,7 @@ def ask(payload: schemas.ChatInput,
         history_messages=history_messages,
     )
 
-    provider = (settings.CHATBOT_LLM_PROVIDER or "ollama").strip().lower()
+    provider = (settings.CHATBOT_LLM_PROVIDER or "none").strip().lower()
 
     _save_message(db, user.id, payload.session_id or "default", "user", message, intent=intent)
     _save_message(
@@ -777,6 +777,46 @@ def ask(payload: schemas.ChatInput,
         "knowledge_links": knowledge_links,
         "web_results": web_results,
     }
+
+
+@router.get("/status")
+def status(user=Depends(get_current_user)):
+    provider = (settings.CHATBOT_LLM_PROVIDER or "none").strip().lower()
+    status_payload = {
+        "provider": provider,
+        "ollama_configured": provider == "ollama",
+        "ollama_base_url": settings.CHATBOT_OLLAMA_BASE_URL,
+        "ollama_model": settings.CHATBOT_OLLAMA_MODEL,
+        "llm_timeout_seconds": settings.CHATBOT_LLM_TIMEOUT_SECONDS,
+    }
+
+    if provider != "ollama":
+        status_payload["ollama_reachable"] = False
+        status_payload["message"] = "LLM provider is disabled; assistant will use fallback response mode."
+        return status_payload
+
+    endpoint = f"{settings.CHATBOT_OLLAMA_BASE_URL.rstrip('/')}/api/tags"
+    req = request.Request(endpoint, headers={"User-Agent": "AgroPilotAI/1.0"})
+    try:
+        with request.urlopen(req, timeout=4) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        models_list = [m.get("name") for m in (data.get("models") or []) if isinstance(m, dict) and m.get("name")]
+        status_payload["ollama_reachable"] = True
+        status_payload["available_models"] = models_list[:20]
+        if settings.CHATBOT_OLLAMA_MODEL not in models_list:
+            status_payload["message"] = (
+                f"Ollama is reachable but model '{settings.CHATBOT_OLLAMA_MODEL}' is not loaded. "
+                "Run: ollama pull " + settings.CHATBOT_OLLAMA_MODEL
+            )
+        else:
+            status_payload["message"] = "Ollama is reachable and model is available."
+    except Exception:
+        status_payload["ollama_reachable"] = False
+        status_payload["message"] = (
+            "Ollama is not reachable from backend. Ensure Ollama is running and the base URL is correct."
+        )
+
+    return status_payload
 
 
 @router.get("/history", response_model=List[schemas.ChatMessageOut])

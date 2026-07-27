@@ -5,6 +5,7 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
+  const [authReady, setAuthReady] = useState(false);
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem("user") || "null")
   );
@@ -22,6 +23,31 @@ export function AuthProvider({ children }) {
 
     window.addEventListener("auth:expired", onAuthExpired);
     return () => window.removeEventListener("auth:expired", onAuthExpired);
+  }, []);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const token = localStorage.getItem("token");
+      const cachedUser = JSON.parse(localStorage.getItem("user") || "null");
+
+      if (!token || !cachedUser) {
+        clearAuthState();
+        setAuthReady(true);
+        return;
+      }
+
+      try {
+        const { data } = await api.get("/api/auth/me");
+        localStorage.setItem("user", JSON.stringify(data));
+        setUser(data);
+      } catch {
+        clearAuthState();
+      } finally {
+        setAuthReady(true);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   // Login uses OAuth2 form encoding (username = email)
@@ -49,6 +75,10 @@ export function AuthProvider({ children }) {
   const logout = () => {
     clearAuthState();
   };
+
+  if (!authReady) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout }}>

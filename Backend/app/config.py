@@ -13,6 +13,8 @@ from pydantic_settings import BaseSettings
 
 # Backend directory (one level up from this file)
 BASE_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_SQLITE_DB_PATH = (BASE_DIR / "agropilot.db").resolve()
+DEFAULT_DATABASE_URL = f"sqlite:///{DEFAULT_SQLITE_DB_PATH.as_posix()}"
 
 # Load default env first, then local overrides
 env_path = BASE_DIR / ".env"
@@ -27,7 +29,7 @@ if local_env_path.exists():
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "sqlite:///./agropilot.db"
+    DATABASE_URL: str = DEFAULT_DATABASE_URL
     SECRET_KEY: str = "supersecretkey"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440

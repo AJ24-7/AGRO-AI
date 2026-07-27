@@ -202,6 +202,7 @@ export default function Assistant() {
   const [voiceStatus, setVoiceStatus] = useState("");
   const [userLocation, setUserLocation] = useState(null);
   const [interimTranscript, setInterimTranscript] = useState("");
+  const [assistantStatus, setAssistantStatus] = useState(null);
 
   const recognitionRef = useRef(null);
   const silenceTimerRef = useRef(null);
@@ -326,8 +327,24 @@ export default function Assistant() {
     }
   };
 
-  useEffect(() => { 
+  const loadAssistantStatus = async () => {
+    try {
+      const { data } = await api.get("/api/chatbot/status");
+      setAssistantStatus(data);
+    } catch (error) {
+      setAssistantStatus({
+        provider: "unknown",
+        ollama_reachable: false,
+        message:
+          error?.response?.data?.detail
+          || "Assistant status check failed. Verify backend URL, auth token, and chatbot API availability.",
+      });
+    }
+  };
+
+  useEffect(() => {
     loadHistory();
+    loadAssistantStatus();
     
     // Request user location for location-based recommendations
     if (navigator.geolocation) {
@@ -471,9 +488,15 @@ export default function Assistant() {
         setVoiceStatus("Assistant returned an empty reply.");
       }
       speak(data.reply);
-    } catch {
-      const fallback = { role: "assistant", content: t("chatbot.serverError") };
+    } catch (error) {
+      const errorDetail =
+        error?.response?.data?.detail
+        || error?.response?.data?.message
+        || error?.message
+        || t("chatbot.serverError");
+      const fallback = { role: "assistant", content: `${t("chatbot.serverError")} (${errorDetail})` };
       setMessages((m) => [...m, fallback]);
+      setVoiceStatus(`Assistant request failed: ${errorDetail}`);
       speak(fallback.content);
     } finally {
       setIsLoading(false);
@@ -503,7 +526,10 @@ export default function Assistant() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={loadHistory}
+            onClick={() => {
+              loadHistory();
+              loadAssistantStatus();
+            }}
             disabled={loadingHistory}
             className="btn-outline"
             title={t("chatbot.refreshHistory")}
@@ -522,6 +548,17 @@ export default function Assistant() {
           </button>
         </div>
       </div>
+
+      {assistantStatus && (
+        <div className="card px-4 py-3 border border-slate-200 bg-white">
+          <p className="text-xs font-semibold text-slate-700">
+            Assistant mode: {assistantStatus.provider || "unknown"}
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {assistantStatus.message || "Status available."}
+          </p>
+        </div>
+      )}
 
       <div className="card p-0 overflow-hidden">
         <div ref={listRef} className="h-[55vh] overflow-y-auto px-4 sm:px-5 py-5 space-y-4 bg-slate-50/60">
